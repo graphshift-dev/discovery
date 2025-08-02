@@ -1,0 +1,2 @@
+[console_scripts]
+graphshift = cli.main:cli_entry_point

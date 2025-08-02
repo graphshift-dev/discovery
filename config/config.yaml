@@ -1,0 +1,62 @@
+# GraphShift OSS Configuration - JAR-based Architecture with Multi-SCM Support
+graphshift:
+  version: "1.0.0"
+  
+  analysis:
+    # Analysis methods - exactly ONE must be true
+    clone_from_git: true
+    local_repo: false  
+    stream_from_web: false
+    
+    # Settings for clone_from_git method
+    clone_dir: "./graphshift-temp"
+    cleanup_after_analysis: true
+    
+    # Parallel processing controls
+    max_concurrent_repos: 5          # Max repos analyzed in parallel (org analysis)
+    max_concurrent_requests: 10      # Max concurrent Git operations
+    large_repo_threshold: 1000       # Files threshold for "large repo" warnings
+    
+  jar:
+    # JAR execution settings
+    memory:
+      heap_size: "2g"               # Max heap size for JAR execution
+      initial_heap: "512m"          # Initial heap size
+    timeout_seconds: 600            # JAR execution timeout
+    
+    # Batch processing for large repos
+    chunking:
+      enabled: true                 # Enable chunked processing
+      chunk_size: 250              # Process N files at a time
+      
+  scm:
+    # GitHub configuration (cloud and enterprise)
+    github:
+      api_base_url: "https://api.github.com"  # For GitHub Enterprise: https://your-github-enterprise.com/api/v3
+      token: "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"     # Personal Access Token (required)
+      rate_limit_threshold: 100
+      max_concurrent_requests: 10
+      
+    # GitLab configuration (cloud and self-hosted)
+    # Uncomment and configure if using GitLab
+    # gitlab:
+    #   api_base_url: "https://gitlab.com/api/v4"  # For self-hosted: https://your-gitlab.com/api/v4
+    #   token: "your_gitlab_pat_token_here"        # Personal Access Token (required)
+    #   rate_limit_threshold: 100
+    #   max_concurrent_requests: 10
+      
+    # Bitbucket configuration (cloud and server)
+    # Uncomment and configure if using Bitbucket
+    # bitbucket:
+    #   api_base_url: "https://api.bitbucket.org/2.0"  # For Bitbucket Server: https://your-bitbucket.com/rest/api/1.0
+    #   username: "your_bitbucket_username"            # Username (required)
+    #   app_password: "your_bitbucket_app_password"    # App Password (required)
+    #   max_concurrent_requests: 10
+      
+  paths:
+    output_base: "oss/outputs"      # JAR output directory
+    logs: "oss/data/logs"           # Log files directory
+
+logging:
+  level: "INFO"
+  file: "oss/data/logs/graphshift.log"

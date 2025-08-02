@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GraphShift Analysis - {repo_name}</title>
+    <style>
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background: #f5f7fa; }}
+        .container {{ max-width: 1200px; margin: 0 auto; padding: 20px; }}
+        .header {{ background: #e9ecef; color: #495057; padding: 20px; border-radius: 0; border-bottom: 1px solid #dee2e6; }}
+        .header h1 {{ margin: 0; font-size: 2em; font-weight: 500; color: #2c3e50; }}
+        .header h2 {{ margin: 10px 0 0 0; font-size: 1.2em; font-weight: 400; color: #6c757d; }}
+        .header p {{ margin: 5px 0 0 0; color: #6c757d; font-size: 0.9em; }}
+        .summary {{ background: #f1f3f4; padding: 20px; margin: 20px 0; border-radius: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+        .summary h3 {{ margin-top: 0; color: #2c3e50; }}
+        .stats {{ display: flex; gap: 10px; margin-top: 10px; }}
+        .stat {{ background: #f8f9fa; padding: 6px; border-radius: 0; flex: 1; text-align: center; height: auto; font-size: 0.85em; }}
+        .filter {{ background: white; padding: 15px; margin: 20px 0; border-radius: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+        select, input {{ padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 0; font-size: 14px; }}
+        select:focus, input:focus {{ outline: none; border-color: #667eea; }}
+        .severity-dot {{ 
+            display: inline-block; 
+            width: 12px; 
+            height: 12px; 
+            border-radius: 50%; 
+            margin-right: 8px;
+            vertical-align: middle;
+        }}
+        .severity-dot.critical {{ background: #e74c3c; }}
+        .severity-dot.warning {{ background: #f39c12; }}
+        .severity-dot.info {{ background: #27ae60; }}
+        .severity-dot.error {{ background: #e74c3c; }}
+        .table-container {{ background: white; border-radius: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; margin: 20px 0; }}
+        .findings-table {{ width: 100%; border-collapse: collapse; font-size: 14px; }}
+        .findings-table th {{ 
+            background: #f8f9fa; 
+            color: #495057; 
+            padding: 16px 20px; 
+            text-align: left; 
+            font-weight: 600; 
+            border-bottom: 2px solid #dee2e6; 
+            cursor: pointer; 
+            user-select: none; 
+            font-size: 14px;
+        }}
+        .findings-table th:hover {{ background: #e9ecef; }}
+        .findings-table td {{ 
+            padding: 14px 20px; 
+            border-bottom: 1px solid #f1f3f4; 
+            vertical-align: middle; 
+            line-height: 1.4;
+        }}
+        .findings-table tr:nth-child(even) {{ background: #f8f9fa; }}
+        .findings-table tr:nth-child(odd) {{ background: white; }}
+        .findings-table tr:hover {{ background: #e9ecef !important; }}
+        .findings-table tr.hidden {{ display: none; }}
+        .findings-table code {{ 
+            background: #e2e8f0; 
+            padding: 4px 8px; 
+            border-radius: 6px; 
+            font-size: 0.85em; 
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: #4a5568;
+            border: 1px solid #cbd5e0;
+        }}
+        .sort-arrow {{ margin-left: 8px; opacity: 0.8; font-size: 0.9em; }}
+        .table-info {{ text-align: center; color: #666; margin: 15px 0; font-weight: 500; }}
+        
+        /* Column-specific styling */
+        .findings-table th:nth-child(1) {{ width: 200px; min-width: 180px; }} /* Method */
+        .findings-table th:nth-child(2) {{ width: 350px; min-width: 300px; }} /* File */
+        .findings-table th:nth-child(3) {{ width: 80px; text-align: center; }} /* Severity */
+        .findings-table th:nth-child(4) {{ width: auto; min-width: 400px; }} /* Signature */
+        
+        .findings-table td:nth-child(3) {{ text-align: center; }}
+        
+        .method-name {{ 
+            font-weight: 500; 
+            color: #495057; 
+            font-size: 14px; 
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }}
+        .file-path {{ 
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace; 
+            font-size: 12px; 
+            color: #6c757d; 
+            word-break: break-all; 
+        }}
+        .signature-cell {{ 
+            max-width: 400px; 
+            word-wrap: break-word; 
+            overflow-wrap: break-word; 
+        }}
+        .signature-cell code {{
+            background: transparent;
+            color: #495057;
+            font-size: 13px;
+            padding: 0;
+            border: none;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }}
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="{logo_path}" alt="GraphShift" style="width: 40px; height: 40px; border-radius: 0;" onerror="this.outerHTML='<div style=&quot;width: 40px; height: 40px; background: #2c3e50; border-radius: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 14px;&quot;>GS</div>'">
+            <div>
+                <h1 style="margin: 0; font-size: 28px;">GraphShift Discovery Report</h1>
+            </div>
+        </div>
+        <div style="text-align: right;">
+            <h2 style="margin: 0; font-size: 14px; color: #495057;">Repository: {repo_name}</h2>
+            <p style="margin: 5px 0 0 0; font-size: 14px; color: #6c757d;">Target JDK: {target_jdk}</p>
+            <p style="margin: 5px 0 0 0; font-size: 14px; color: #6c757d;">Scope: {scope}</p>
+            <p style="margin: 5px 0 0 0; font-size: 14px; color: #6c757d;">Generated: {analysis_timestamp}</p>
+        </div>
+    </div>
+    
+    <div class="summary">
+        <h3>📊 Analysis Summary</h3>
+        <div class="stats">
+            <div class="stat" style="background: #3498db; color: white; padding: 8px; border-radius: 0; display: flex; align-items: center; gap: 12px;">
+                <div style="font-size: 2.5em; font-weight: bold; line-height: 1;">{total_issues}</div>
+                <div style="flex: 1;">
+                    <div style="font-size: 0.9em; font-weight: 600; line-height: 1.2;">Total Issues</div>
+                    <div style="font-size: 0.9em; line-height: 1.2; opacity: 0.9;">All Deprecations</div>
+                </div>
+            </div>
+            <div class="stat" style="background: #e74c3c; color: white; padding: 8px; border-radius: 0; display: flex; align-items: center; gap: 12px;">
+                <div style="font-size: 2.5em; font-weight: bold; line-height: 1;">{critical_count}</div>
+                <div style="flex: 1;">
+                    <div style="font-size: 0.9em; font-weight: 600; line-height: 1.2;">Critical Issues</div>
+                    <div style="font-size: 0.9em; line-height: 1.2;">Compilation Failure</div>
+                </div>
+            </div>
+            <div class="stat" style="background: #f39c12; color: white; padding: 8px; border-radius: 0; display: flex; align-items: center; gap: 12px;">
+                <div style="font-size: 2.5em; font-weight: bold; line-height: 1;">{warning_count}</div>
+                <div style="flex: 1;">
+                    <div style="font-size: 0.9em; font-weight: 600; line-height: 1.2;">Warning Issues</div>
+                    <div style="font-size: 0.9em; line-height: 1.2;">Marked for Removal</div>
+                </div>
+            </div>
+            <div class="stat" style="background: #27ae60; color: white; padding: 8px; border-radius: 0; display: flex; align-items: center; gap: 12px;">
+                <div style="font-size: 2.5em; font-weight: bold; line-height: 1;">{info_count}</div>
+                <div style="flex: 1;">
+                    <div style="font-size: 0.9em; font-weight: 600; line-height: 1.2;">Info Issues</div>
+                    <div style="font-size: 0.9em; line-height: 1.2;">Future Deprecation</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="filter">
+        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+            <div>
+                <label>Severity:</label>
+                <select id="severityFilter" onchange="filterTable()">
+                    <option value="">All Severities</option>
+                    <option value="error">Critical</option>
+                    <option value="warning">Warning</option>
+                    <option value="info">Info</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <div class="table-container">
+        <table id="findingsTable" class="findings-table">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(0)">Method <span class="sort-arrow">↕️</span></th>
+                    <th>File</th>
+                    <th>Severity</th>
+                    <th onclick="sortTable(3)">Signature <span class="sort-arrow">↕️</span></th>
+                </tr>
+            </thead>
+            <tbody>
+{table_rows}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="table-info">
+        <p>📊 Showing <span id="visibleRows">{total_issues}</span> of <span id="totalRows">{total_issues}</span> findings</p>
+    </div>
+    
+    <script>
+        let sortDirection = {{}};
+        
+        function filterTable() {{
+            const severityFilter = document.getElementById('severityFilter').value;
+            const rows = document.querySelectorAll('.finding-row');
+            
+            let visibleCount = 0;
+            
+            rows.forEach(row => {{
+                const severity = row.getAttribute('data-severity');
+                const severityMatch = severityFilter === '' || severity === severityFilter;
+                
+                if (severityMatch) {{
+                    row.classList.remove('hidden');
+                    visibleCount++;
+                }} else {{
+                    row.classList.add('hidden');
+                }}
+            }});
+            
+            document.getElementById('visibleRows').textContent = visibleCount;
+        }}
+        
+        function sortTable(columnIndex) {{
+            const table = document.getElementById('findingsTable');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Toggle sort direction
+            const currentDirection = sortDirection[columnIndex] || 'asc';
+            const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+            sortDirection[columnIndex] = newDirection;
+            
+            // Clear all sort arrows
+            document.querySelectorAll('.sort-arrow').forEach(arrow => {{
+                arrow.textContent = '↕️';
+            }});
+            
+            // Set current sort arrow
+            const currentArrow = document.querySelectorAll('.sort-arrow')[columnIndex];
+            currentArrow.textContent = newDirection === 'asc' ? '↑' : '↓';
+            
+            rows.sort((a, b) => {{
+                const aValue = a.cells[columnIndex].textContent.trim();
+                const bValue = b.cells[columnIndex].textContent.trim();
+                
+                // Handle numeric columns (Line, Years Ago)
+                if (columnIndex === 2 || columnIndex === 5) {{
+                    const aNum = parseInt(aValue) || 0;
+                    const bNum = parseInt(bValue) || 0;
+                    return newDirection === 'asc' ? aNum - bNum : bNum - aNum;
+                }}
+                
+                // Handle text columns
+                const comparison = aValue.localeCompare(bValue);
+                return newDirection === 'asc' ? comparison : -comparison;
+            }});
+            
+            // Re-append sorted rows
+            rows.forEach(row => tbody.appendChild(row));
+        }}
+        
+
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {{
+            filterTable();
+        }});
+    </script>
+</div>
+</body>
+</html>
