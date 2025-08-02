@@ -1,0 +1,31 @@
+{
+  "organization": "spring-projects",
+  "analysis_timestamp": "2025-08-02T12:53:44.523512",
+  "target_jdk": "21",
+  "summary": {
+    "total_repositories": 1,
+    "total_issues": 25199,
+    "severity_breakdown": {
+      "critical": 6854,
+      "warning": 0,
+      "info": 18345
+    }
+  },
+  "repositories": [
+    {
+      "repository": "spring-boot",
+      "total_issues": 25199,
+      "critical_issues": 6854,
+      "warning_issues": 0,
+      "info_issues": 18345,
+      "target_jdk": "21",
+      "migration_readiness": "BLOCKED",
+      "migration_reason": "6854 critical issues require immediate attention",
+      "files_saved": [
+        "reports\\spring-projects_20250802_125242\\spring-boot\\spring-boot_analysis.json",
+        "reports\\spring-projects_20250802_125242\\spring-boot\\spring-boot_analysis.html",
+        "reports\\spring-projects_20250802_125242\\spring-boot\\spring-boot_analysis.csv"
+      ]
+    }
+  ]
+}

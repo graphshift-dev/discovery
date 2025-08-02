@@ -12,7 +12,6 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-
 class OutputFormatter:
     """
     Unified output formatter with branching logic.
@@ -60,7 +59,7 @@ class OutputFormatter:
         # Create output directory (different for single repo vs org)
         if output_dir is None:
             # Standalone single repo
-            output_dir = Path("outputs") / f"{repo_name}_{self.timestamp}"
+            output_dir = Path("reports") / f"{repo_name}_{self.timestamp}"
         else:
             # Repo within organization
             output_dir = output_dir / repo_name
@@ -75,9 +74,8 @@ class OutputFormatter:
             json.dump(enriched_data, f, indent=2, ensure_ascii=False)
         files_saved.append(str(json_file))
         
-        # Generate and save HTML (pass context for logo path)
-        is_within_org = output_dir != Path("outputs") / f"{repo_name}_{self.timestamp}"
-        html_content = self._generate_html_report(enriched_data, repo_name, is_within_org)
+        # Generate and save HTML
+        html_content = self._generate_html_report(enriched_data, repo_name, output_dir)
         html_file = output_dir / f"{repo_name}_analysis.html"
         with open(html_file, 'w', encoding='utf-8') as f:
             f.write(html_content)
@@ -125,7 +123,7 @@ class OutputFormatter:
         repositories = analysis_result['repositories']
         
         # Create organization output directory
-        org_output_dir = Path("outputs") / f"{org_name}_{self.timestamp}"
+        org_output_dir = Path("reports") / f"{org_name}_{self.timestamp}"
         org_output_dir.mkdir(parents=True, exist_ok=True)
         
         files_saved = []
@@ -247,7 +245,7 @@ class OutputFormatter:
             'categories': categories
         }
     
-    def _generate_html_report(self, enriched_data: Dict[str, Any], repo_name: str, is_within_org: bool = False) -> str:
+    def _generate_html_report(self, enriched_data: Dict[str, Any], repo_name: str, output_dir: Path) -> str:
         """
         Generate HTML report using template file.
         Consolidates HTML conversion service logic.
@@ -264,6 +262,17 @@ class OutputFormatter:
         except FileNotFoundError:
             # Fallback to simple template if file not found
             return self._generate_simple_html_fallback(enriched_data, repo_name)
+        
+        # Determine logo path based on output directory depth
+        # Single repo: reports/repo_name_timestamp/ -> ../../resources/graphshift-logo.png
+        # Org repo: reports/org_name_timestamp/repo_name/ -> ../../../resources/graphshift-logo.png
+        output_parts = output_dir.parts
+        if len(output_parts) >= 3 and 'reports' in output_parts:
+            # Org structure: reports/org_name_timestamp/repo_name/
+            logo_path = "../../../resources/graphshift-logo.png"
+        else:
+            # Single repo structure: reports/repo_name_timestamp/
+            logo_path = "../../resources/graphshift-logo.png"
         
         findings = enriched_data['findings']
         summary = enriched_data['summary']
@@ -314,24 +323,27 @@ class OutputFormatter:
         except:
             formatted_timestamp = enriched_data['analysis_timestamp']
         
-        # Determine correct logo path based on context
-        logo_path = "../../../graphshift-logo.png" if is_within_org else "../../graphshift-logo.png"
+                    # Determine correct logo path based on context
+            
         
         # Fill template placeholders
-        html_content = template.format(
-            repo_name=repo_name,
-            analysis_timestamp=formatted_timestamp,
-            target_jdk=target_jdk,
-            scope=scope,
-            logo_path=logo_path,
-            total_issues=summary['total_issues'],
-            critical_count=summary['severity_breakdown']['critical'],
-            warning_count=summary['severity_breakdown']['warning'],
-            info_count=summary['severity_breakdown']['info'],
-            table_rows=''.join(table_rows)
-        )
-        
-        return html_content
+        try:
+            html_content = template.format(
+                repo_name=repo_name,
+                analysis_timestamp=formatted_timestamp,
+                target_jdk=target_jdk,
+                scope=scope,
+                logo_path=logo_path,
+                total_issues=summary['total_issues'],
+                critical_count=summary['severity_breakdown']['critical'],
+                warning_count=summary['severity_breakdown']['warning'],
+                info_count=summary['severity_breakdown']['info'],
+                table_rows=''.join(table_rows)
+            )
+            return html_content
+        except Exception as e:
+            logger.error(f"Template formatting failed: {e}")
+            return self._generate_simple_html_fallback(enriched_data, repo_name)
     
     def _generate_simple_html_fallback(self, enriched_data: Dict[str, Any], repo_name: str) -> str:
         """Simple HTML fallback if template file not found"""
@@ -425,7 +437,11 @@ class OutputFormatter:
             template_path = Path(__file__).parent.parent / "templates" / "organization_report.html"
             with open(template_path, 'r', encoding='utf-8') as f:
                 template = f.read()
-            
+        except FileNotFoundError:
+            # Fallback to simple template if file not found
+            return self._generate_simple_organization_fallback(aggregate_data, org_name)
+        
+        try:
             summary = aggregate_data['summary']
             repositories = aggregate_data['repositories']
             
@@ -527,3 +543,61 @@ class OutputFormatter:
             csv_lines.append(line)
         
         return "\n".join(csv_lines)
+    
+    def _generate_simple_organization_fallback(self, aggregate_data: Dict[str, Any], org_name: str) -> str:
+        """Simple HTML fallback for organization report if template file not found"""
+        summary = aggregate_data['summary']
+        repositories = aggregate_data['repositories']
+        
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>GraphShift Analysis - {org_name}</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                table {{ border-collapse: collapse; width: 100%; }}
+                th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+                th {{ background-color: #f2f2f2; }}
+                .critical {{ color: red; font-weight: bold; }}
+                .warning {{ color: orange; font-weight: bold; }}
+                .info {{ color: blue; }}
+            </style>
+        </head>
+        <body>
+            <h1>GraphShift Analysis - {org_name}</h1>
+            <h2>Organization Summary</h2>
+            <p>Total Issues: {summary['total_issues']}</p>
+            <p>Critical Issues: {summary['critical_issues']}</p>
+            <p>Warning Issues: {summary['warning_issues']}</p>
+            <p>Info Issues: {summary['info_issues']}</p>
+            
+            <h2>Repository Details</h2>
+            <table>
+                <tr>
+                    <th>Repository</th>
+                    <th>Total Issues</th>
+                    <th>Critical</th>
+                    <th>Warning</th>
+                    <th>Info</th>
+                </tr>
+        """
+        
+        for repo in repositories:
+            html += f"""
+                <tr>
+                    <td>{repo['repository']}</td>
+                    <td>{repo['total_issues']}</td>
+                    <td class="critical">{repo['critical_issues']}</td>
+                    <td class="warning">{repo['warning_issues']}</td>
+                    <td class="info">{repo['info_issues']}</td>
+                </tr>
+            """
+        
+        html += """
+            </table>
+        </body>
+        </html>
+        """
+        
+        return html

@@ -54,9 +54,9 @@ graphshift:
     #   max_concurrent_requests: 10
       
   paths:
-    output_base: "oss/outputs"      # JAR output directory
-    logs: "oss/data/logs"           # Log files directory
+    output_base: "reports"          # Reports output directory
+    logs: "logs"                    # Log files directory
 
 logging:
   level: "INFO"
-  file: "oss/data/logs/graphshift.log"
+  file: "logs/graphshift.log"

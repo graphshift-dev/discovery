@@ -26,7 +26,7 @@ class GraphShiftCommands:
     Thin command shell - delegates all logic to services.
     Single responsibility: Parse commands and delegate to appropriate services.
     """
-    
+
     def __init__(self, config: Dict[str, Any], memory_overrides: Optional[Dict[str, str]] = None):
         """Initialize command shell with service delegation"""
         self.config = config
@@ -68,13 +68,13 @@ class GraphShiftCommands:
             # Format and display results
             formatted_output = self.health_service.format_health_results(health_results, verbose)
             print(formatted_output)
-            
+
         except Exception as e:
             logger.error(f"Health check failed: {e}")
             print(f"Health check failed: {str(e)}")
-    
+
     async def handle_analyze_repository(
-        self,
+        self, 
         repo_path_or_url: str,
         to_version: str = "21",
         scope: str = "all-deprecations",
@@ -107,7 +107,7 @@ class GraphShiftCommands:
                     print(f"Clone retained at: {result['cleanup_path']}")
             
             return result
-            
+
         except Exception as e:
             logger.error(f"Repository analysis failed: {e}")
             print(f"Analysis failed: {str(e)}")
@@ -156,7 +156,7 @@ class GraphShiftCommands:
             logger.error(f"Organization analysis failed: {e}")
             print(f"Organization analysis failed: {str(e)}")
             return None
-    
+
     def _extract_repo_name(self, repo_path_or_url: str) -> str:
         """Extract repository name from path or URL"""
         if repo_path_or_url.startswith(("http://", "https://", "git@")):
@@ -211,7 +211,7 @@ def load_configuration() -> Dict[str, Any]:
         config['_original_cwd'] = original_cwd
         
         return config
-            
+        
     except Exception as e:
         logger.warning(f"Failed to load configuration: {e}")
         return _get_default_config()
@@ -222,7 +222,7 @@ def _get_default_config() -> Dict[str, Any]:
     return {
         "graphshift": {
             "jar": {
-                "path": "gs-analyzer.jar",
+                "path": "resources/gs-analyzer.jar",
                 "memory": "2g",
                 "initial_memory": "512m"
             },

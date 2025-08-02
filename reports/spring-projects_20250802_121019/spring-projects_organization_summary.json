@@ -1,0 +1,31 @@
+{
+  "organization": "spring-projects",
+  "analysis_timestamp": "2025-08-02T12:10:33.330216",
+  "target_jdk": "21",
+  "summary": {
+    "total_repositories": 1,
+    "total_issues": 3999,
+    "severity_breakdown": {
+      "critical": 500,
+      "warning": 0,
+      "info": 3499
+    }
+  },
+  "repositories": [
+    {
+      "repository": "spring-amqp",
+      "total_issues": 3999,
+      "critical_issues": 500,
+      "warning_issues": 0,
+      "info_issues": 3499,
+      "target_jdk": "21",
+      "migration_readiness": "BLOCKED",
+      "migration_reason": "500 critical issues require immediate attention",
+      "files_saved": [
+        "outputs\\spring-projects_20250802_121019\\spring-amqp\\spring-amqp_analysis.json",
+        "outputs\\spring-projects_20250802_121019\\spring-amqp\\spring-amqp_analysis.html",
+        "outputs\\spring-projects_20250802_121019\\spring-amqp\\spring-amqp_analysis.csv"
+      ]
+    }
+  ]
+}

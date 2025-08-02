@@ -111,7 +111,7 @@ class ConfigManager:
             # Default logging configuration
             default_config = {
                 "level": "INFO",
-                "file": "./data/logs/graphshift.log", 
+                "file": "./logs/graphshift.log", 
                 "max_size_mb": 10,
                 "backup_count": 5,
                 "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -249,15 +249,15 @@ class ConfigManager:
                     "chunking": {}
                 },
                 "paths": {
-                                "output_base": "./outputs",
-            "logs": "./data/logs"
+                    "output_base": "./reports",
+                    "logs": "./logs"
                 },
                 "features": {},
                 "messaging": {}
             },
             "logging": {
                 "level": "INFO", 
-                "file": "./data/logs/graphshift.log"
+                "file": "./logs/graphshift.log"
             }
         }
     

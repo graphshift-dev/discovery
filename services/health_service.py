@@ -122,7 +122,18 @@ class HealthService:
         """Check JAR analyzer availability"""
         try:
             jar_config = self.config.get("graphshift", {}).get("jar", {})
-            jar_path = Path(jar_config.get("path", "gs-analyzer.jar"))
+            jar_path_config = jar_config.get("path", "resources/gs-analyzer.jar")
+            
+            # Handle package installation vs development
+            if Path(jar_path_config).is_absolute() or Path(jar_path_config).exists():
+                jar_path = Path(jar_path_config)
+            else:
+                # Try to find JAR in package installation
+                try:
+                    import pkg_resources
+                    jar_path = Path(pkg_resources.resource_filename(__name__.split('.')[0], jar_path_config))
+                except:
+                    jar_path = Path(jar_path_config)
             
             if jar_path.exists():
                 return {

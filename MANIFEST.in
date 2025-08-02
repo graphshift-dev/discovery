@@ -1,0 +1,25 @@
+# Include important files
+include README.md
+include LICENSE
+include requirements.txt
+include .gitignore
+
+# Include configuration files
+recursive-include config *.yaml *.yml
+
+# Include templates and assets
+recursive-include templates *.html
+include graphshift-logo.png
+
+# Include the JAR file
+include gs-analyzer.jar
+
+# Exclude development and runtime files
+exclude .git*
+exclude *.log
+exclude *.pyc
+exclude __pycache__
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude clones *
+recursive-exclude outputs *

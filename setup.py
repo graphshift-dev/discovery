@@ -19,7 +19,7 @@ if requirements_file.exists():
     requirements = [req.strip() for req in requirements if req.strip() and not req.startswith('#')]
 
 setup(
-    name="graphshift-oss",
+    name="graphshift-discovery",
     version="1.0.0",
     description="AI-Augmented Java Migration Assistant - Open Source Edition",
     long_description=long_description,
@@ -30,9 +30,7 @@ setup(
     packages=find_packages(exclude=["tests*"]),
     include_package_data=True,
     package_data={
-        "": ["*.yaml", "*.yml", "*.json", "*.jar"],
-        "config": ["*.yaml", "*.yml"],
-        "gs-analyzer": ["**/*.jar"],
+        "": ["resources/*.jar", "resources/*.png", "config/*.yaml", "config/*.yml", "templates/*.html"],
     },
     install_requires=[
         # Minimal dependencies for JAR-based architecture
@@ -59,7 +57,7 @@ setup(
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",

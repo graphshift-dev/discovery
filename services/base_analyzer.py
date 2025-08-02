@@ -28,7 +28,19 @@ class BaseAnalyzer:
         
         # JAR configuration
         jar_config = config.get("graphshift", {}).get("jar", {})
-        self.jar_path = Path(jar_config.get("path", "gs-analyzer.jar"))
+        jar_path_config = jar_config.get("path", "resources/gs-analyzer.jar")
+        
+        # Handle package installation vs development
+        if Path(jar_path_config).is_absolute() or Path(jar_path_config).exists():
+            self.jar_path = Path(jar_path_config)
+        else:
+            # Try to find JAR in package installation
+            try:
+                import pkg_resources
+                self.jar_path = Path(pkg_resources.resource_filename(__name__.split('.')[0], jar_path_config))
+            except:
+                # Fallback to relative path
+                self.jar_path = Path(jar_path_config)
         
         # Defensive programming - ensure defaults are strings
         default_memory = jar_config.get("memory", "2g")
@@ -74,6 +86,9 @@ class BaseAnalyzer:
             
             logger.debug(f"Using memory: {memory}, initial: {initial_memory}")
             
+            # Ensure temp directory exists
+            Path('temp').mkdir(exist_ok=True)
+            
             # Build JAR command
             output_file = f"temp_analysis_{target_jdk}_{scope}.json"
             cmd = [
@@ -85,10 +100,10 @@ class BaseAnalyzer:
                 '-d', str(dir_path),
                 '-t', target_jdk,
                 '--scope', scope,
-                '-o', output_file
+                '-o', f"./temp/{output_file}"
             ]
             
-            logger.debug(f"Running JAR analysis: {' '.join(cmd)}")
+            logger.debug(f"Running analysis: {' '.join(cmd)}")
             
             # Execute JAR
             process = await asyncio.create_subprocess_exec(
@@ -101,7 +116,7 @@ class BaseAnalyzer:
             
             if process.returncode == 0:
                 # Read the output file
-                output_path = Path('oss/outputs') / output_file
+                output_path = Path('temp') / output_file
                 if output_path.exists():
                     with open(output_path, 'r', encoding='utf-8') as f:
                         result = json.load(f)

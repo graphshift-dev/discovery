@@ -1,0 +1,31 @@
+{
+  "organization": "spring-projects",
+  "analysis_timestamp": "2025-08-02T12:35:16.699166",
+  "target_jdk": "21",
+  "summary": {
+    "total_repositories": 1,
+    "total_issues": 18616,
+    "severity_breakdown": {
+      "critical": 698,
+      "warning": 0,
+      "info": 17918
+    }
+  },
+  "repositories": [
+    {
+      "repository": "spring-security",
+      "total_issues": 18616,
+      "critical_issues": 698,
+      "warning_issues": 0,
+      "info_issues": 17918,
+      "target_jdk": "21",
+      "migration_readiness": "BLOCKED",
+      "migration_reason": "698 critical issues require immediate attention",
+      "files_saved": [
+        "reports\\spring-projects_20250802_123426\\spring-security\\spring-security_analysis.json",
+        "reports\\spring-projects_20250802_123426\\spring-security\\spring-security_analysis.html",
+        "reports\\spring-projects_20250802_123426\\spring-security\\spring-security_analysis.csv"
+      ]
+    }
+  ]
+}
