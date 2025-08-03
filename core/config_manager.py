@@ -33,9 +33,15 @@ class ConfigManager:
     def load_config(self, config_path: str) -> Tuple[bool, Optional[str]]:
         """Load configuration from YAML file with environment overrides"""
         try:
-            config_file = Path(config_path)
-            if not config_file.exists():
-                return False, f"Config file not found: {config_path}"
+            # First, check if user has a working directory config
+            user_base_config = self._get_user_working_directory_config()
+            if user_base_config:
+                config_file = user_base_config
+                logger.info(f"Using user working directory config: {config_file}")
+            else:
+                config_file = Path(config_path)
+                if not config_file.exists():
+                    return False, f"Config file not found: {config_path}"
             
             if not HAS_YAML:
                 # Fallback to minimal default configuration if YAML is not available
@@ -45,7 +51,7 @@ class ConfigManager:
                 with open(config_file, 'r', encoding='utf-8') as f:
                     self.config = yaml.safe_load(f)
             
-            self.config_path = config_path
+            self.config_path = str(config_file)
             
             # Apply environment variable overrides
             self._apply_environment_overrides()
@@ -83,6 +89,27 @@ class ConfigManager:
             if 'logging' not in self.config:
                 self.config['logging'] = {}
             self.config['logging']['level'] = log_level.upper()
+        
+        # Check for user's base directory first
+        user_config_file = Path.home() / ".graphshift" / "config.yaml"
+        if user_config_file.exists():
+            try:
+                import yaml
+                with open(user_config_file, 'r', encoding='utf-8') as f:
+                    user_config = yaml.safe_load(f)
+                    base_dir = user_config.get('base_directory')
+                    if base_dir:
+                        # Update paths to use user's base directory
+                        paths = self.config.get('graphshift', {}).get('paths', {})
+                        paths['logs'] = f"{base_dir}/logs"
+                        paths['output_base'] = f"{base_dir}/reports"
+                        
+                        # Update logging path too
+                        if 'logging' not in self.config:
+                            self.config['logging'] = {}
+                        self.config['logging']['file'] = f"{base_dir}/logs/graphshift.log"
+            except Exception:
+                pass  # Fall back to defaults if user config can't be read
         
         # Data directory overrides (for Docker or custom deployment)
         data_dir = os.getenv('GRAPHSHIFT_DATA_DIR')
@@ -224,6 +251,24 @@ class ConfigManager:
             if features.get(pro_feature, False):
                 logger.warning(f"PRO feature '{pro_feature}' is enabled but this is OSS version - disabling")
                 features[pro_feature] = False
+    
+    def _get_user_working_directory_config(self) -> Optional[Path]:
+        """Get user's working directory config file if it exists"""
+        try:
+            # Check for user's base directory config
+            user_config_file = Path.home() / ".graphshift" / "config.yaml"
+            if user_config_file.exists():
+                import yaml
+                with open(user_config_file, 'r', encoding='utf-8') as f:
+                    user_config = yaml.safe_load(f)
+                    base_dir = user_config.get('base_directory')
+                    if base_dir:
+                        working_config = Path(base_dir) / "config" / "config.yaml"
+                        if working_config.exists():
+                            return working_config
+        except Exception:
+            pass
+        return None
     
     def _get_minimal_config(self) -> Dict[str, Any]:
         """Get minimal default configuration when YAML is not available"""

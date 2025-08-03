@@ -30,7 +30,15 @@
         .severity-dot.warning {{ background: #f39c12; }}
         .severity-dot.info {{ background: #27ae60; }}
         .severity-dot.error {{ background: #e74c3c; }}
-        .table-container {{ background: white; border-radius: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; margin: 20px 0; }}
+        .table-container {{ 
+            background: white; 
+            border-radius: 0; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            margin: 20px 0; 
+            max-height: 600px; 
+            overflow-y: auto; 
+            position: relative;
+        }}
         .findings-table {{ width: 100%; border-collapse: collapse; font-size: 14px; }}
         .findings-table th {{ 
             background: #f8f9fa; 
@@ -42,6 +50,9 @@
             cursor: pointer; 
             user-select: none; 
             font-size: 14px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }}
         .findings-table th:hover {{ background: #e9ecef; }}
         .findings-table td {{ 
@@ -150,10 +161,11 @@
                 </div>
             </div>
         </div>
+        
     </div>
     
     <div class="filter">
-        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+        <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap; justify-content: space-between;">
             <div>
                 <label>Severity:</label>
                 <select id="severityFilter" onchange="filterTable()">
@@ -162,6 +174,9 @@
                     <option value="warning">Warning</option>
                     <option value="info">Info</option>
                 </select>
+            </div>
+            <div style="font-size: 14px; color: #6c757d;">
+                Visit <a href="https://docs.graphshift.dev" target="_blank" style="color: #3498db; text-decoration: none;">docs.graphshift.dev</a> for extensive real world examples to remediate all your deprecations
             </div>
         </div>
     </div>

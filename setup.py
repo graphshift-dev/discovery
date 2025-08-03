@@ -30,13 +30,18 @@ setup(
     packages=find_packages(exclude=["tests*"]),
     include_package_data=True,
     package_data={
-        "": ["resources/*.jar", "resources/*.png", "config/*.yaml", "config/*.yml", "templates/*.html"],
+        "": ["README.md"],  # Include README at package root
+        "resources": ["*.jar", "*.png"],
+        "templates": ["*.html"],
+        "config": ["*.yaml", "*.yml"],
     },
     install_requires=[
         # Minimal dependencies for JAR-based architecture
         "pyyaml>=6.0",           # Configuration files
         "pathlib>=1.0.0",        # Path handling (built-in Python 3.4+)
         "aiohttp>=3.8.0",        # GitHub API client
+        "appdirs>=1.4.4",        # Cross-platform user directories
+        "setuptools",            # For pkg_resources
     ],
     extras_require={
         "dev": [

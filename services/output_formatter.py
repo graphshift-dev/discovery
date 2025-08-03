@@ -18,8 +18,31 @@ class OutputFormatter:
     Handles enrichment, HTML, CSV, and aggregation in one service.
     """
     
-    def __init__(self):
+    def __init__(self, config: Dict[str, Any]):
+        self.config = config
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # Get base directory from user config
+        self.base_dir = self._get_base_dir()
+    
+    def _get_base_dir(self) -> Path:
+        """Get base directory from user config, fallback to current directory"""
+        from core.initialization import get_user_config_file
+        import yaml
+        
+        try:
+            user_config_file = get_user_config_file()
+            if user_config_file.exists():
+                with open(user_config_file, 'r', encoding='utf-8') as f:
+                    user_config = yaml.safe_load(f)
+                    if user_config and 'base_directory' in user_config:
+                        base_dir = Path(user_config['base_directory'])
+                        return base_dir
+        except Exception:
+            pass
+        
+        # Fallback to current directory
+        return Path('.')
     
     async def format_and_save(
         self,
@@ -59,7 +82,7 @@ class OutputFormatter:
         # Create output directory (different for single repo vs org)
         if output_dir is None:
             # Standalone single repo
-            output_dir = Path("reports") / f"{repo_name}_{self.timestamp}"
+            output_dir = self.base_dir / "reports" / f"{repo_name}_{self.timestamp}"
         else:
             # Repo within organization
             output_dir = output_dir / repo_name
@@ -122,8 +145,16 @@ class OutputFormatter:
         org_name = analysis_result['organization']
         repositories = analysis_result['repositories']
         
+        # Extract just the directory name for local paths (fix for local org analysis)
+        if '\\' in org_name or '/' in org_name:
+            # Local org analysis - extract just the directory name
+            org_display_name = Path(org_name).name
+        else:
+            # Remote org analysis - use as-is
+            org_display_name = org_name
+        
         # Create organization output directory
-        org_output_dir = Path("reports") / f"{org_name}_{self.timestamp}"
+        org_output_dir = self.base_dir / "reports" / f"{org_display_name}_{self.timestamp}"
         org_output_dir.mkdir(parents=True, exist_ok=True)
         
         files_saved = []
@@ -136,24 +167,24 @@ class OutputFormatter:
             repo_summaries.append(repo_result['summary'])
         
         # Create organization aggregate report
-        aggregate_data = self._create_aggregate_report(org_name, repo_summaries, analysis_result)
+        aggregate_data = self._create_aggregate_report(org_display_name, repo_summaries, analysis_result)
         
         # Save organization JSON
-        org_json_file = org_output_dir / f"{org_name}_organization_summary.json"
+        org_json_file = org_output_dir / f"{org_display_name}_organization_summary.json"
         with open(org_json_file, 'w', encoding='utf-8') as f:
             json.dump(aggregate_data, f, indent=2, ensure_ascii=False)
         files_saved.append(str(org_json_file))
         
         # Save organization HTML
-        org_html_content = self._generate_organization_html(aggregate_data, org_name)
-        org_html_file = org_output_dir / f"{org_name}_organization_summary.html"
+        org_html_content = self._generate_organization_html(aggregate_data, org_display_name)
+        org_html_file = org_output_dir / f"{org_display_name}_organization_summary.html"
         with open(org_html_file, 'w', encoding='utf-8') as f:
             f.write(org_html_content)
         files_saved.append(str(org_html_file))
         
         # Save organization CSV
         org_csv_content = self._generate_organization_csv(aggregate_data)
-        org_csv_file = org_output_dir / f"{org_name}_organization_summary.csv"
+        org_csv_file = org_output_dir / f"{org_display_name}_organization_summary.csv"
         with open(org_csv_file, 'w', encoding='utf-8', newline='') as f:
             f.write(org_csv_content)
         files_saved.append(str(org_csv_file))
@@ -253,25 +284,27 @@ class OutputFormatter:
         import os
         from pathlib import Path
         
-        # Load HTML template
-        template_path = Path(__file__).parent.parent / 'templates' / 'single_repo_report.html'
+        # Load HTML template from working directory only
+        template_path = self.base_dir / 'templates' / 'single_repo_report.html'
+        
+        if not template_path.exists():
+            raise FileNotFoundError(f"Template not found in working directory: {template_path}")
         
         try:
             with open(template_path, 'r', encoding='utf-8') as f:
                 template = f.read()
         except FileNotFoundError:
-            # Fallback to simple template if file not found
-            return self._generate_simple_html_fallback(enriched_data, repo_name)
+            raise FileNotFoundError(f"Could not read template: {template_path}")
         
         # Determine logo path based on output directory depth
         # Single repo: reports/repo_name_timestamp/ -> ../../resources/graphshift-logo.png
         # Org repo: reports/org_name_timestamp/repo_name/ -> ../../../resources/graphshift-logo.png
         output_parts = output_dir.parts
-        if len(output_parts) >= 3 and 'reports' in output_parts:
-            # Org structure: reports/org_name_timestamp/repo_name/
+        if len(output_parts) >= 5 and 'reports' in output_parts:
+            # Org structure: reports/org_name_timestamp/repo_name/ (5+ parts)
             logo_path = "../../../resources/graphshift-logo.png"
         else:
-            # Single repo structure: reports/repo_name_timestamp/
+            # Single repo structure: reports/repo_name_timestamp/ (4 parts)
             logo_path = "../../resources/graphshift-logo.png"
         
         findings = enriched_data['findings']
@@ -323,8 +356,6 @@ class OutputFormatter:
         except:
             formatted_timestamp = enriched_data['analysis_timestamp']
         
-                    # Determine correct logo path based on context
-            
         
         # Fill template placeholders
         try:
@@ -433,13 +464,19 @@ class OutputFormatter:
     def _generate_organization_html(self, aggregate_data: Dict[str, Any], org_name: str) -> str:
         """Generate organization-level HTML report using template"""
         try:
-            # Load the organization template
-            template_path = Path(__file__).parent.parent / "templates" / "organization_report.html"
+            # Load the organization template from working directory only
+            template_path = self.base_dir / "templates" / "organization_report.html"
+            
+            if not template_path.exists():
+                raise FileNotFoundError(f"Template not found in working directory: {template_path}")
+            
             with open(template_path, 'r', encoding='utf-8') as f:
                 template = f.read()
         except FileNotFoundError:
-            # Fallback to simple template if file not found
-            return self._generate_simple_organization_fallback(aggregate_data, org_name)
+            raise FileNotFoundError(f"Could not read organization template: {template_path}")
+        
+        # Calculate logo path for organization report (always at org level: reports/org_timestamp/)
+        logo_path = "../../resources/graphshift-logo.png"
         
         try:
             summary = aggregate_data['summary']
@@ -501,7 +538,6 @@ class OutputFormatter:
                 <tr>
                     <td>{repo_link}</td>
                     <td>{status}</td>
-                    <td>{repo_files:,}</td>
                     <td>{repo_total:,}</td>
                     <td>{repo_critical:,}</td>
                     <td>{repo_warning:,}</td>
@@ -516,6 +552,7 @@ class OutputFormatter:
                 target_jdk=target_jdk,
                 scope=scope,
                 analysis_timestamp=formatted_timestamp,
+                logo_path=logo_path,
                 total_issues=f"{total_issues:,}",
                 total_critical=f"{total_critical:,}",
                 total_warning=f"{total_warning:,}",

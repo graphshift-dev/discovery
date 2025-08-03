@@ -118,7 +118,7 @@ class GitHubProvider(SCMProvider):
                         wait_time = max(0, reset_time - current_time)
                         
                         if wait_time > 0:
-                            logger.warning(f"GitHub rate limit approaching. Waiting {wait_time} seconds...")
+                            logger.warning(f"GraphShift could not detect a GitHub token. Organization analysis requires a token to avoid rate limits. Please add 'github_token' in config.yaml and retry. ")
                             await asyncio.sleep(wait_time)
                     
                     if response.status == 200:

@@ -139,7 +139,9 @@
 
         .table-container {{
             background: white;
-            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+            position: relative;
         }}
 
         table {{
@@ -156,6 +158,9 @@
             color: #495057;
             border-bottom: 2px solid #dee2e6;
             white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }}
 
         td {{
@@ -217,7 +222,7 @@
     <div class="container">
     <div class="header">
         <div class="header-left">
-            <img src="../../resources/graphshift-logo.png" alt="GraphShift" class="logo" onerror="this.style.display='none'">
+                            <img src="{logo_path}" alt="GraphShift" class="logo" onerror="this.style.display='none'">
             <h1>GraphShift Discovery Report</h1>
         </div>
         <div class="header-right">
@@ -262,13 +267,16 @@
         </div>
     </div>
 
-    <div class="filter">
+    <div class="filter" style="display: flex; justify-content: space-between; align-items: center;">
         <select id="statusFilter" onchange="filterTable()">
             <option value="">Repo Migration Readiness</option>
             <option value="BLOCKED">Blocked</option>
             <option value="READY WITH TECH DEBT">Ready with Tech Debt</option>
             <option value="READY">Ready</option>
         </select>
+        <div style="font-size: 14px; color: #6c757d;">
+            Visit <a href="https://docs.graphshift.dev" target="_blank" style="color: #3498db; text-decoration: none;">docs.graphshift.dev</a> for extensive real world examples to remediate all your deprecations
+        </div>
     </div>
 
     <div class="table-container">
@@ -277,9 +285,8 @@
                 <tr>
                     <th class="sortable" onclick="sortTable(0)">Repository <span class="sort-arrow">↕</span></th>
                     <th>Status</th>
-                    <th>Files</th>
-                    <th class="sortable" onclick="sortTable(3)">Total Issues <span class="sort-arrow">↕</span></th>
-                    <th class="sortable" onclick="sortTable(4)">Critical <span class="sort-arrow">↕</span></th>
+                    <th class="sortable" onclick="sortTable(2)">Total Issues <span class="sort-arrow">↕</span></th>
+                    <th class="sortable" onclick="sortTable(3)">Critical <span class="sort-arrow">↕</span></th>
                     <th>Warning</th>
                     <th>Info</th>
                 </tr>

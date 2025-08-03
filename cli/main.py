@@ -32,7 +32,7 @@ class MainOrchestrator:
         org_name: Optional[str] = None,
         to_version: str = "21",
         scope: str = "all-deprecations",
-        max_repos: int = 50,
+        max_repos: int = 500,
         keep_clones: bool = True,
         provider: str = "github"
     ) -> bool:
@@ -47,7 +47,7 @@ class MainOrchestrator:
             
             # Initialize services
             analysis_service = AnalysisService(self.config)
-            output_formatter = OutputFormatter()
+            output_formatter = OutputFormatter(self.config)
             
             # CLI Feedback: Starting
             if repo_path:
@@ -136,13 +136,15 @@ class MainOrchestrator:
         files_saved = output_result.get('files_saved', [])
         total_files = len(files_saved)
         
-        # For organization reports, show summary instead of verbose listing
+        # Show file paths for both single repo and organization
         if output_result.get('type') == 'organization':
             repos_processed = output_result.get('repositories_processed', 0)
             print(f"Reports saved: {total_files} files ({repos_processed} repositories + organization summary)")
         else:
-            # For single repository, show the files
             print(f"Reports saved: {total_files} files")
+        
+        # Show file paths only for single repo analysis
+        if output_result.get('type') != 'organization':
             for file_path in files_saved:
                 print(f"  • {file_path}")
     
@@ -186,6 +188,7 @@ class MainOrchestrator:
     def _print_success(self):
         """CLI Feedback: Operation successful"""
         print("Operation completed successfully")
+        print("Visit https://docs.graphshift.dev for extensive real world examples to remediate all your deprecations")
     
     def _print_failed(self, reason: str):
         """CLI Feedback: Operation failed"""
@@ -194,6 +197,70 @@ class MainOrchestrator:
     def _print_cancelled(self):
         """CLI Feedback: Operation cancelled"""
         print("Operation cancelled by user")
+    
+    async def orchestrate_config_command(self, action: str) -> bool:
+        """Handle config command"""
+        from pathlib import Path
+        import subprocess
+        import os
+        
+        # Get user's config file path
+        try:
+            user_config_file = Path.home() / ".graphshift" / "config.yaml"
+            if user_config_file.exists():
+                import yaml
+                with open(user_config_file, 'r', encoding='utf-8') as f:
+                    user_config = yaml.safe_load(f)
+                    base_dir = user_config.get('base_directory')
+                    if base_dir:
+                        config_file = Path(base_dir) / "config" / "config.yaml"
+                    else:
+                        config_file = None
+            else:
+                config_file = None
+        except Exception:
+            config_file = None
+        
+        if not config_file or not config_file.exists():
+            print("GraphShift not initialized or config file not found.")
+            print("Run 'graphshift init' first to set up your working directory.")
+            return False
+        
+        if action == "edit":
+            # Try to open with system default editor
+            try:
+                if os.name == 'nt':  # Windows
+                    os.startfile(str(config_file))
+                elif os.name == 'posix':  # macOS and Linux
+                    subprocess.run(['open' if os.uname().sysname == 'Darwin' else 'xdg-open', str(config_file)])
+                print(f"Opened config file: {config_file}")
+                return True
+            except Exception as e:
+                print(f"Could not open editor: {e}")
+                print(f"Please manually edit: {config_file}")
+                return False
+                
+        elif action == "show":
+            # Display current config
+            try:
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                print("Current GraphShift Configuration:")
+                print("=" * 40)
+                print(content)
+                return True
+            except Exception as e:
+                print(f"Could not read config file: {e}")
+                return False
+                
+        elif action == "path":
+            # Show config file path
+            print(f"Config file location: {config_file}")
+            return True
+            
+        else:
+            print("Available config actions: edit, show, path")
+            return False
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
@@ -220,7 +287,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     
     analyze_parser.add_argument("--to-version", choices=["8", "11", "17", "21"], default="21", help="Target JDK version")
     analyze_parser.add_argument("--scope", choices=["upgrade-blockers", "all-deprecations"], default="all-deprecations", help="Analysis scope")
-    analyze_parser.add_argument("--max-repos", type=int, default=50, help="Maximum repositories to analyze")
+    analyze_parser.add_argument("--max-repos", type=int, default=500, help="Maximum repositories to analyze")
     analyze_parser.add_argument("--no-keep-clones", action="store_true", help="Delete clones after analysis")
     analyze_parser.add_argument("--provider", choices=["github", "gitlab", "bitbucket"], default="github", help="SCM provider")
     
@@ -231,6 +298,31 @@ def create_argument_parser() -> argparse.ArgumentParser:
         formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=50)
     )
     health_parser.add_argument("--verbose", action="store_true", help="Detailed health information")
+    
+    # Init command
+    init_parser = subparsers.add_parser(
+        "init", 
+        help="Initialize GraphShift configuration",
+        formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=50)
+    )
+    init_parser.add_argument("--base-dir", help="Base directory for GraphShift files")
+    
+    # Config command
+    config_parser = subparsers.add_parser(
+        "config",
+        help="Manage GraphShift configuration",
+        formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=50)
+    )
+    config_subparsers = config_parser.add_subparsers(dest='config_action', help='Configuration actions')
+    
+    # config edit
+    config_edit_parser = config_subparsers.add_parser('edit', help='Open config file for editing')
+    
+    # config show
+    config_show_parser = config_subparsers.add_parser('show', help='Show current configuration')
+    
+    # config path
+    config_path_parser = config_subparsers.add_parser('path', help='Show config file path')
     
     # Global options
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
@@ -249,6 +341,8 @@ async def main():
         level=logging.DEBUG if args.verbose else logging.INFO,
         format='%(levelname)s: %(message)s'
     )
+    
+    # Initialization check is now handled in cli_entry_point()
     
     # Load configuration
     try:
@@ -281,6 +375,13 @@ async def main():
     elif args.command == "health":
         success = await orchestrator.orchestrate_health_check(args.verbose)
         
+    elif args.command == "init":
+        from core.initialization import initialize_graphshift
+        success = initialize_graphshift(args.base_dir)
+        
+    elif args.command == "config":
+        success = await orchestrator.orchestrate_config_command(args.config_action)
+        
     else:
         parser.print_help()
         return False
@@ -291,9 +392,33 @@ async def main():
 def cli_entry_point():
     """Entry point for console scripts"""
     try:
+        # Check if this is the init command before doing initialization check
+        if len(sys.argv) > 1 and sys.argv[1] == "init":
+            # Skip initialization check for init command
+            pass
+        else:
+            # Ensure GraphShift is initialized for all other commands (including --help)
+            from core.initialization import ensure_initialized
+            if not ensure_initialized():
+                sys.exit(1)
+        
         success = asyncio.run(main())
         sys.exit(0 if success else 1)
     except KeyboardInterrupt:
+        print("\nOperation cancelled by user.")
+        # Give asyncio time to cleanup
+        try:
+            loop = asyncio.get_event_loop()
+            if not loop.is_closed():
+                # Cancel all running tasks
+                pending = asyncio.all_tasks(loop)
+                for task in pending:
+                    task.cancel()
+                # Wait briefly for cleanup
+                if pending:
+                    loop.run_until_complete(asyncio.wait(pending, timeout=2.0))
+        except Exception:
+            pass  # Ignore cleanup errors
         sys.exit(130)
     except Exception as e:
         print(f"Fatal error: {e}")

@@ -17,6 +17,7 @@ from typing import Dict, Optional, Any
 from services.help_service import HelpService
 from services.health_service import HealthService
 from services.analysis_service import AnalysisService
+from core.initialization import ensure_initialized
 
 logger = logging.getLogger("graphshift.cli")
 
