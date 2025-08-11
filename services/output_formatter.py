@@ -411,13 +411,34 @@ class OutputFormatter:
         """
         findings = enriched_data['findings']
         
-        # CSV header
-        csv_lines = ["Repository,File,Line,Type,Severity,Description,Category"]
+        # Enhanced CSV header - ALL JSON FIELDS
+        csv_lines = [
+            "Repository,File,Line,Type,Severity,Description,Category,"
+            "Method_Name,Signature,Reason,For_Removal,Target_JDK,Removed_In,"
+            "Years_Deprecated,Source,Deprecated_Since"
+        ]
         
-        # CSV data
+        # Enhanced CSV data - ALL FIELDS
         repo_name = enriched_data['repository']
         for finding in findings:
-            line = f'"{repo_name}","{finding.get("file", "")}","{finding.get("line", "")}","{finding.get("type", "")}","{finding.get("severity", "")}","{finding.get("description", "")}","{finding.get("category", "")}"'
+            line = (
+                f'"{repo_name}",'
+                f'"{finding.get("file", "")}",'
+                f'"{finding.get("line", "")}",'
+                f'"{finding.get("type", "")}",'
+                f'"{finding.get("severity", "")}",'
+                f'"{finding.get("description", "")}",'
+                f'"{finding.get("category", "")}",'
+                f'"{finding.get("method_name", "")}",'
+                f'"{finding.get("signature", "")}",'
+                f'"{finding.get("reason", "")}",'
+                f'"{finding.get("for_removal", "")}",'
+                f'"{finding.get("target_jdk", "")}",'
+                f'"{finding.get("removed_in", "")}",'
+                f'"{finding.get("years_deprecated", "")}",'
+                f'"{finding.get("source", "")}",'
+                f'"{finding.get("deprecated_since", "")}"'
+            )
             csv_lines.append(line)
         
         return "\n".join(csv_lines)
@@ -571,12 +592,31 @@ class OutputFormatter:
         """Generate organization-level CSV report"""
         repositories = aggregate_data['repositories']
         
-        # CSV header
-        csv_lines = ["Repository,Total_Issues,Critical_Issues,Warning_Issues,Info_Issues"]
+        # Enhanced CSV header - ALL JSON FIELDS
+        csv_lines = [
+            "Repository,Total_Issues,Critical_Issues,Warning_Issues,Info_Issues,"
+            "Method_Name,Signature,Reason,For_Removal,Target_JDK,Removed_In,"
+            "Years_Deprecated,Source,Deprecated_Since"
+        ]
         
-        # CSV data
+        # Enhanced CSV data - ALL FIELDS
         for repo in repositories:
-            line = f'"{repo["repository"]}",{repo["total_issues"]},{repo["critical_issues"]},{repo["warning_issues"]},{repo["info_issues"]}'
+            line = (
+                f'"{repo["repository"]}",'
+                f'{repo["total_issues"]},'
+                f'{repo["critical_issues"]},'
+                f'{repo["warning_issues"]},'
+                f'{repo["info_issues"]},'
+                f'"{repo.get("method_name", "")}",'
+                f'"{repo.get("signature", "")}",'
+                f'"{repo.get("reason", "")}",'
+                f'"{repo.get("for_removal", "")}",'
+                f'"{repo.get("target_jdk", "")}",'
+                f'"{repo.get("removed_in", "")}",'
+                f'"{repo.get("years_deprecated", "")}",'
+                f'"{repo.get("source", "")}",'
+                f'"{repo.get("deprecated_since", "")}"'
+            )
             csv_lines.append(line)
         
         return "\n".join(csv_lines)
